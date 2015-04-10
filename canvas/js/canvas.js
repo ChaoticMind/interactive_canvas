@@ -89,6 +89,16 @@ function CanvasState(canvas) {
   // double click for making new Shapes
   canvas.addEventListener('dblclick', function(e) {
     var mouse = myState.getMouse(e);
+    // check if we dblclick on existing shape
+    for (var i = myState.shapes.length-1; i >= 0; i--) {
+      if (myState.shapes[i].contains(mouse.x, mouse.y)) {
+        myState.removeShape(i);
+        myState.selection = null;
+        return;
+      }
+    }
+
+    // dblclick on empty space creates new shape
     myState.addShape(new Shape(mouse.x - 10, mouse.y - 10, 20, 20,
                                'rgba(0,255,0,.6)'));
   }, true);
@@ -104,6 +114,12 @@ function CanvasState(canvas) {
 
 CanvasState.prototype.addShape = function(shape) {
   this.shapes.push(shape);
+  this.valid = false;
+}
+
+
+CanvasState.prototype.removeShape = function(i) {
+  this.shapes.splice(i, 1);
   this.valid = false;
 }
 
