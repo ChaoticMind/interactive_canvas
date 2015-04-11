@@ -4,15 +4,19 @@ window.onload = initialize;
 
 
 function initialize() {
-	var s = new CanvasState(document.getElementById('canvas'));
+	canvas = document.getElementById('canvas');
+	canvas.tabIndex = 100; // to be able to register onkeydown
+	var s = new CanvasState(canvas);
 
 	// in jquery, events bubble up
 	$('#nextshape').change({cs: s}, function(event) {
 		update_next(event.data.cs)
 	});
-	update_next(s);
 	// var form = document.getElementById('nextshape');
 	// form.onchange = update_next(s);
+	canvas.onkeydown = function(event) {s.hotkeys(event);}
+	canvas.onblur = function(event) {s.deselect();}
+	update_next(s);
 
 	s.addShape(new Shape(40, 40, 50, 50)); // The default is gray
 	s.addShape(new Shape(60, 140, 40, 60, 'lightskyblue'));

@@ -21,7 +21,7 @@ function CanvasState(canvas) {
   this.htmlLeft = html.offsetLeft;
 
   // **** Keep track of state! ****
-  this.valid = false; // when set to false, the canvas will redraw everything
+  this.req_redraw = false; // when set to true, the canvas will redraw everything
   this.shapes = [];  // the collection of things to be drawn
   this.dragging = false; // Keep track of when we are dragging
   this.resizeDragging = false; // Keep track of resize
@@ -77,16 +77,13 @@ function CanvasState(canvas) {
         myState.dragoffy = my - mySel.y;
         myState.dragging = true;
         myState.selection = mySel;
-        myState.valid = false;
+        myState.req_redraw = true;
         return;
       }
     }
     // havent returned means we have failed to select anything.
     // If there was an object selected, we deselect it
-    if (myState.selection) {
-      myState.selection = null;
-      myState.valid = false; // Need to clear the old selection border
-    }
+    myState.deselect();
   }, true);
 
   canvas.addEventListener('mousemove', function(e) {
@@ -97,7 +94,7 @@ function CanvasState(canvas) {
       // Thats why we saved the offset and use it here
       myState.selection.x = mouse.x - myState.dragoffx;
       myState.selection.y = mouse.y - myState.dragoffy;   
-      myState.valid = false; // Something's dragging so we must redraw
+      myState.req_redraw = true; // Something's dragging so we must redraw
     } else if (myState.resizeDragging) {
       var mouse = myState.getMouse(e);
       // time to resize!
@@ -142,7 +139,7 @@ function CanvasState(canvas) {
           myState.selection.h = mouse.y - oldy;
           break;
       }
-      myState.valid = false;
+      myState.req_redraw = true;
     } else if (myState.selection !== null) {
       var mouse = myState.getMouse(e);
       for (var i = 0; i < 8; i++) {
@@ -155,7 +152,6 @@ function CanvasState(canvas) {
             mouse.y >= cur.y && mouse.y <= cur.y + myState.selectionBoxSize) {
           // cursor hovering over a handle
           myState.expectResize = i;
-          myState.valid = false;
 
           switch (i) {
             case 0:
@@ -187,7 +183,6 @@ function CanvasState(canvas) {
         }
       }
       // not over a selection box, return to normal
-      myState.resizeDragging = false;
       myState.expectResize = -1;
       this.style.cursor = 'auto';
     }
@@ -212,18 +207,15 @@ function CanvasState(canvas) {
   // double click for making new Shapes
   canvas.addEventListener('dblclick', function(e) {
     var mouse = myState.getMouse(e);
-    this.style.cursor = 'auto';
 
     // check if we dblclick on existing shape
-    for (var i = myState.shapes.length-1; i >= 0; i--) {
-      if (myState.shapes[i].contains(mouse.x, mouse.y)) {
-        myState.removeShape(i);
-        myState.selection = null;
-        return;
-      }
+    if (myState.selection && myState.selection.contains(mouse.x, mouse.y)) {
+      myState.removeShape();
+      return;
     }
 
     // dblclick on empty space creates new shape
+    this.style.cursor = 'auto';
     myState.addShape(
       new Shape(mouse.x - myState.next_width/2, mouse.y - myState.next_height/2,
                 myState.next_width, myState.next_height, myState.next_color)
@@ -240,16 +232,54 @@ function CanvasState(canvas) {
 };
 
 
+// called manually/explicitely, so "this" has the correct reference
+// otherwise it refers to the canvas element
+// which forces us to set e.g. canvas.state = s (in main.js)
+// then use this.state.selection etc in this function
+CanvasState.prototype.hotkeys = function(event) {
+  var key = event.keyCode;
+  var ctrl = event.ctrlKey;
+
+  if (ctrl && key == 88) { // ctrl + x
+    if (this.selection)
+      this.removeShape();
+    // console.log('cut')
+  } else if (key == 46) { // delete
+    if (this.selection)
+      this.removeShape();
+    // console.log('delete')
+  } else if (key == 27) { // escape
+    this.deselect();
+    //console.log('escape')
+  }
+};
+
 CanvasState.prototype.addShape = function(shape) {
   this.shapes.push(shape);
-  this.valid = false;
+  this.req_redraw = true;
 };
 
 
-CanvasState.prototype.removeShape = function(i) {
-  this.shapes.splice(i, 1);
-  this.valid = false;
+CanvasState.prototype.removeShape = function() {
+  for (var i = this.shapes.length-1; i >= 0 ; i--) {
+    if (this.shapes[i] == this.selection) {
+      this.shapes.splice(i, 1);
+      this.deselect();
+      this.req_redraw = true;
+      this.canvas.style.cursor = 'auto'; // in case cursor was over a handle
+      return;
+    }
+  }
+  console.log("warning: couldn't remove shape...");
 };
+
+
+CanvasState.prototype.deselect = function() {
+  if (this.selection) {
+    this.selection = null;
+    this.req_redraw = true; // Need to clear the old selection border
+  }
+}
 
 
 CanvasState.prototype.clear = function() {
@@ -261,7 +291,8 @@ CanvasState.prototype.clear = function() {
 // It only ever does something if the canvas gets invalidated by our code
 CanvasState.prototype.draw = function() {
   // if our state is invalid, redraw and validate!
-  if (!this.valid) {
+  if (this.req_redraw) {
+    // console.log('redrawing');
     var ctx = this.ctx;
     var shapes = this.shapes;
     this.clear();
@@ -295,7 +326,7 @@ CanvasState.prototype.draw = function() {
     }
     
     // ** Add stuff you want drawn on top all the time here **
-    this.valid = true;
+    this.req_redraw = false;
   }
 };
 
