@@ -10,14 +10,13 @@ function Shape(x, y, w, h, fill) {
   this.w = w || 1;
   this.h = h || 1;
   this.fill = fill || '#AAAAAA';
-  this.selectionBoxColor = 'darkred';
 }
 
 // Draws this shape to a given context
-Shape.prototype.draw = function(ctx, state) {
+Shape.prototype.draw = function(state) {
   // if handles_size is > 0, draws handles of that size.
-  ctx.fillStyle = this.fill;
-  ctx.fillRect(this.x, this.y, this.w, this.h);
+  state.ctx.fillStyle = this.fill;
+  state.ctx.fillRect(this.x, this.y, this.w, this.h);
 
   if (state.selection === this) {
     var half = state.selectionBoxSize / 2;
@@ -52,12 +51,6 @@ Shape.prototype.draw = function(ctx, state) {
 
     state.selectionHandles[7].x = this.x + this.w - half;
     state.selectionHandles[7].y = this.y + this.h - half;
-
-    ctx.fillStyle = this.selectionBoxColor;
-    for (var i = 0; i < 8; i += 1) {
-      var cur = state.selectionHandles[i];
-      ctx.fillRect(cur.x, cur.y, state.selectionBoxSize, state.selectionBoxSize);
-    }
   }
 };
 

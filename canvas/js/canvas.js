@@ -234,6 +234,7 @@ function CanvasState(canvas) {
   this.selectionColor = '#CC0000';
   this.selectionWidth = 2;  
   this.interval = 30;
+  this.selectionBoxColor = 'darkred';
   this.selectionBoxSize = 6;
   setInterval(function() { myState.draw(); }, myState.interval);
 };
@@ -274,7 +275,7 @@ CanvasState.prototype.draw = function() {
       // We can skip the drawing of elements that have moved off the screen:
       if (shape.x <= this.width && shape.y <= this.height &&
           shape.x + shape.w >= 0 && shape.y + shape.h >= 0)
-        shapes[i].draw(ctx, this);
+        shapes[i].draw(this);
     }
     
     // draw selection
@@ -284,6 +285,13 @@ CanvasState.prototype.draw = function() {
       ctx.lineWidth = this.selectionWidth;
       var mySel = this.selection;
       ctx.strokeRect(mySel.x, mySel.y, mySel.w, mySel.h);
+
+      // draw handles
+      ctx.fillStyle = this.selectionBoxColor;
+      for (var i = 0; i < 8; i += 1) {
+        var cur = this.selectionHandles[i];
+        ctx.fillRect(cur.x, cur.y, this.selectionBoxSize, this.selectionBoxSize);
+      }
     }
     
     // ** Add stuff you want drawn on top all the time here **
