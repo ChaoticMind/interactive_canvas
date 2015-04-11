@@ -21,10 +21,53 @@
 	<!-- <div id="container" class='container-fluid'> -->
 	<div id="container" class='container'>
 		<h2>Interactive canvas</h2>
-		<canvas id='canvas' width="960" height="600"></canvas>
+		<div class="row">
+			<form id="nextshape" class="form-inline">
+				<div class="col-md-6">
+					<div class="form-group">
+						<label for="width"></label>
+						<input type="number" min="10" max="500" step="10" class="form-control input-sm" id="width" placeholder="Default width">
+					</div>
+					<div class="form-group">
+						<label for="height">x</label>
+						<input type="number" min="10" max="500" step="10" class="form-control input-sm" id="height" placeholder="Default height">
+					</div>
+				</div>
+
+				<div class="col-md-2">
+					<label class="checkbox-inline">
+						<input type="checkbox" id="transparent" value="transparent" checked>Transparent
+					</label>
+				</div>
+
+				<div class="col-md-4">
+					<label class="radio-inline">
+						<input type="radio" name="color" id="color1" value="rgb(0,255,0)" checked>green
+					</label>
+					<label class="radio-inline">
+						<input type="radio" name="color" id="color2" value="rgb(170, 170, 170)">grey
+					</label>
+					<label class="radio-inline">
+						<input type="radio" name="color" id="color3" value="rgb(245, 222, 179)">brown
+					</label>
+					<label class="radio-inline">
+						<input type="radio" name="color" id="color4" value="rgb(127, 255, 212)">blue
+					</label>
+					<!-- <label class="radio-inline">
+						<input type="radio" name="color" id="color5" value="lightskyblue">cyan
+					</label> -->
+				</div>
+			</form>
+		</div>
+		<div class="row">
+			<div class="col-xs-12">
+				<canvas id='canvas' width="960" height="600"></canvas>
+			</div>
+		</div>
 
 		<footer></footer>
 	</div>
+
 	<!-- js -->
 	<script src="js/shape.js" type="application/javascript"></script>
 	<script src="js/canvas.js" type="application/javascript"></script>

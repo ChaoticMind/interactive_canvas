@@ -1,7 +1,6 @@
 "use strict";
 function CanvasState(canvas) {
   // **** First some setup! ****
-
   this.canvas = canvas;
   this.width = canvas.width;
   this.height = canvas.height;
@@ -22,12 +21,15 @@ function CanvasState(canvas) {
   this.htmlLeft = html.offsetLeft;
 
   // **** Keep track of state! ****
-  
   this.valid = false; // when set to false, the canvas will redraw everything
   this.shapes = [];  // the collection of things to be drawn
   this.dragging = false; // Keep track of when we are dragging
   this.resizeDragging = false; // Keep track of resize
   this.expectResize = -1; // save the # of the selection handle
+  // next Shape attributes
+  this.next_width = 20;
+  this.next_height = 20;
+  this.next_color = 'lightskyblue';
   // the current selected object.
   // In the future we could turn this into an array for multiple selection
   this.selection = null;
@@ -222,8 +224,10 @@ function CanvasState(canvas) {
     }
 
     // dblclick on empty space creates new shape
-    myState.addShape(new Shape(mouse.x - 10, mouse.y - 10, 20, 20,
-                               'rgba(0,255,0,.6)'));
+    myState.addShape(
+      new Shape(mouse.x - myState.next_width/2, mouse.y - myState.next_height/2,
+                myState.next_width, myState.next_height, myState.next_color)
+      );
   }, true);
 
   // **** Options! ****
@@ -285,7 +289,7 @@ CanvasState.prototype.draw = function() {
     // ** Add stuff you want drawn on top all the time here **
     this.valid = true;
   }
-}
+};
 
 
 
