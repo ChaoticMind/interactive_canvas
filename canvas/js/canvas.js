@@ -44,7 +44,7 @@ function CanvasState(canvas) {
 
   this.selectionHandles = [];
   for (var i = 0; i < 8; i += 1) {
-    this.selectionHandles.push(new Shape(this));
+    this.selectionHandles.push(new Shape());
   }
   // **** Then events! ****
 
@@ -276,6 +276,7 @@ CanvasState.prototype.removeShape = function() {
 
 CanvasState.prototype.deselect = function() {
   if (this.selection) {
+    this.canvas.style.cursor = 'auto'; // in case alt-tab away or "escape"
     this.selection = null;
     this.req_redraw = true; // Need to clear the old selection border
   }

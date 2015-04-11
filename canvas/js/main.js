@@ -29,7 +29,7 @@ function initialize() {
 function update_next(cs) {
 	var width = parseInt(document.getElementById('width').value) || 20;
 	var height = parseInt(document.getElementById('height').value) || 20;
-	var alpha = document.getElementById('transparent').checked ? '0.5' : '1';
+	var alpha = parseFloat(document.getElementById('transparency').value) || 0.5;
 	var color = $('input[name="color"]:checked').val();
 	color = color.replace(')', ', ' + alpha + ')').replace('rgb', 'rgba');
 

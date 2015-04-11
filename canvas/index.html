@@ -21,11 +21,39 @@
 	<!-- <div id="container" class='container-fluid'> -->
 	<div id="container" class='container'>
 		<h2>Interactive canvas <small>double click to add shape</small></h2>
-		<div class="row">
-			<form id="nextshape" class="form-inline">
-				<div class="col-md-6">
+		<form id="nextshape" class="form-inline">
+			<div class="row">
+				<div class="col-md-1">
+					<label class="align-center">shape</label>
+				</div>
+				<div class="col-md-11">
+					<label class="radio-inline">
+						<input type="radio" name="shape" id="shape1" value="rectangle" checked>rectangle
+					</label>
+					<label class="radio-inline">
+						<input type="radio" name="shape" id="shape2" value="line" disabled>line
+					</label>
+					<label class="radio-inline">
+						<input type="radio" name="shape" id="shape3" value="line" disabled>simple polygon
+					</label>
+					<label class="radio-inline">
+						<input type="radio" name="shape" id="shape4" value="observer" disabled>observer
+					</label>
+				</div>
+			</div>
+			<hr/>
+
+			<div class="row">
+				<div class="col-md-4">
 					<div class="form-group">
-						<label for="width"></label>
+						<label for="transparency">Transparency</label>
+						<input type="range" min="0.1" max="1" step="0.1" class="form-control input-sm" id="transparency" placeholder="Transparency" oninput="transparency_data.value=this.value" value="0.5">
+						<output id='transparency_data' for="transparency">0.5</output>
+					</div>
+				</div>
+				<div class="col-md-8">
+					<div class="form-group">
+						<label for="width">Default size</label>
 						<input type="number" min="10" max="500" step="10" class="form-control input-sm" id="width" placeholder="Default width">
 					</div>
 					<div class="form-group">
@@ -33,14 +61,14 @@
 						<input type="number" min="10" max="500" step="10" class="form-control input-sm" id="height" placeholder="Default height">
 					</div>
 				</div>
+			</div>
+			<hr/>
 
-				<div class="col-md-2">
-					<label class="checkbox-inline">
-						<input type="checkbox" id="transparent" value="transparent" checked>Transparent
-					</label>
+			<div class="row">
+				<div class="col-md-1 align-center">
+					<label>color</label>
 				</div>
-
-				<div class="col-md-4">
+				<div class="col-md-11">
 					<label class="radio-inline">
 						<input type="radio" name="color" id="color1" value="rgb(0,255,0)" checked>green
 					</label>
@@ -53,12 +81,15 @@
 					<label class="radio-inline">
 						<input type="radio" name="color" id="color4" value="rgb(127, 255, 212)">blue
 					</label>
-					<!-- <label class="radio-inline">
+					<label class="radio-inline">
 						<input type="radio" name="color" id="color5" value="rgb(135, 206, 250)">cyan
-					</label> -->
+					</label>
+					<label class="radio-inline">
+						<input type="radio" name="color" id="color6" value="rgb(135, 206, 250)" disabled>custom
+					</label>
 				</div>
-			</form>
-		</div>
+			</div>
+		</form>
 		<div class="row">
 			<div class="col-xs-12">
 				<canvas id='canvas' width="960" height="600"></canvas>
