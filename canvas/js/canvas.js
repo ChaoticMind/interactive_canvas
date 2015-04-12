@@ -5,6 +5,7 @@ function CanvasState(canvas) {
   this.width = canvas.width;
   this.height = canvas.height;
   this.ctx = canvas.getContext('2d');
+
   // This complicates things a little but but fixes mouse co-ordinate problems
   // when there's a border or padding. See getMouse for more detail
   var stylePaddingLeft, stylePaddingTop, styleBorderLeft, styleBorderTop;
@@ -33,6 +34,7 @@ function CanvasState(canvas) {
   // the current selected object.
   // In the future we could turn this into an array for multiple selection
   this.selection = null;
+  this.selection_index = -1;
   this.dragoffx = 0; // See mousedown and mousemove events for explanation
   this.dragoffy = 0;
 
@@ -77,6 +79,7 @@ function CanvasState(canvas) {
         myState.dragoffy = my - mySel.y;
         myState.dragging = true;
         myState.selection = mySel;
+        myState.selection_index = i;
         myState.req_redraw = true;
         return;
       }
@@ -228,6 +231,8 @@ function CanvasState(canvas) {
   this.interval = 30;
   this.selectionBoxColor = 'darkred';
   this.selectionBoxSize = 6;
+  this.z_index_font = "16px helvetica";
+  this.z_index_color = "green"
   setInterval(function() { myState.draw(); }, myState.interval);
 };
 
@@ -278,6 +283,7 @@ CanvasState.prototype.deselect = function() {
   if (this.selection) {
     this.canvas.style.cursor = 'auto'; // in case alt-tab away or "escape"
     this.selection = null;
+    this.selection_index = -1;
     this.req_redraw = true; // Need to clear the old selection border
   }
 }
@@ -317,6 +323,11 @@ CanvasState.prototype.draw = function() {
       ctx.lineWidth = this.selectionWidth;
       var mySel = this.selection;
       ctx.strokeRect(mySel.x, mySel.y, mySel.w, mySel.h);
+      // indicate z-axis
+      ctx.font = this.z_index_font;
+      ctx.fillStyle = this.z_index_color;
+      var text = "z-index: " + (this.selection_index + 1) + "/" + this.shapes.length;
+      ctx.fillText(text, canvas.width - 10 - ctx.measureText(text).width, 25);
 
       // draw handles
       ctx.fillStyle = this.selectionBoxColor;
