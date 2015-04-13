@@ -242,20 +242,34 @@ function CanvasState(canvas) {
 // which forces us to set e.g. canvas.state = s (in main.js)
 // then use this.state.selection etc in this function
 CanvasState.prototype.hotkeys = function(event) {
-  var key = event.keyCode;
+  var key = event.key;
   var ctrl = event.ctrlKey;
 
-  if (ctrl && key == 88) { // ctrl + x
+  if (ctrl && key == 'x') {
     if (this.selection)
       this.removeShape();
     // console.log('cut')
-  } else if (key == 46) { // delete
+  } else if (key == 'Delete') {
     if (this.selection)
       this.removeShape();
-    // console.log('delete')
-  } else if (key == 27) { // escape
+  } else if (key == 'Escape') {
     this.deselect();
-    //console.log('escape')
+  } else if (key == '-') {
+    if (this.selection && this.selection_index > 0) {
+      var tmp = this.shapes[this.selection_index];
+      this.shapes[this.selection_index] = this.shapes[this.selection_index-1];
+      this.shapes[this.selection_index-1] = tmp;
+      this.selection_index--;
+      this.req_redraw = true;
+    }
+  } else if (key == '+') {
+    if (this.selection && this.selection_index < this.shapes.length-1) {
+      var tmp = this.shapes[this.selection_index];
+      this.shapes[this.selection_index] = this.shapes[this.selection_index+1];
+      this.shapes[this.selection_index+1] = tmp;
+      this.selection_index++;
+      this.req_redraw = true;
+    }
   }
 };
 
