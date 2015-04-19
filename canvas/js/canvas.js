@@ -1,13 +1,11 @@
 "use strict";
 function CanvasState(canvas) {
-  // **** First some setup! ****
   this.canvas = canvas;
   this.width = canvas.width;
   this.height = canvas.height;
   this.ctx = canvas.getContext('2d');
 
-  // This complicates things a little but but fixes mouse co-ordinate problems
-  // when there's a border or padding. See getMouse for more detail
+  // save padding/border info for getMouse()
   var stylePaddingLeft, stylePaddingTop, styleBorderLeft, styleBorderTop;
   if (document.defaultView && document.defaultView.getComputedStyle) {
     this.stylePaddingLeft = parseInt(document.defaultView.getComputedStyle(canvas, null).paddingLeft, 10)      || 0;
@@ -15,13 +13,12 @@ function CanvasState(canvas) {
     this.styleBorderLeft  = parseInt(document.defaultView.getComputedStyle(canvas, null).borderLeftWidth, 10)  || 0;
     this.styleBorderTop   = parseInt(document.defaultView.getComputedStyle(canvas, null).borderTopWidth, 10)   || 0;
   }
-  // Some pages have fixed-position bars (like the stumbleupon bar) at the top or left of the page
-  // They will mess up mouse coordinates and this fixes that
+
+  // Save html offset info for getMouse() (if fixed-position bars are present)
   var html = document.body.parentNode;
   this.htmlTop = html.offsetTop;
   this.htmlLeft = html.offsetLeft;
 
-  // **** Keep track of state! ****
   this.req_redraw = false; // when set to true, the canvas will redraw everything
   this.shapes = [];  // the collection of things to be drawn
   this.dragging = false; // Keep track of when we are dragging
@@ -32,10 +29,9 @@ function CanvasState(canvas) {
   this.next_height = 20;
   this.next_color = 'lightskyblue';
   // the current selected object.
-  // In the future we could turn this into an array for multiple selection
   this.selection = null;
   this.selection_index = -1;
-  this.dragoffx = 0; // See mousedown and mousemove events for explanation
+  this.dragoffx = 0;
   this.dragoffy = 0;
 
   // New, holds the 8 tiny boxes that will be our selection handles
@@ -48,113 +44,102 @@ function CanvasState(canvas) {
   for (var i = 0; i < 8; i += 1) {
     this.selectionHandles.push(new Shape());
   }
-  // **** Then events! ****
 
-  // This is an example of a closure!
-  // Right here "this" means the CanvasState. But we are making events on the Canvas itself,
-  // and when the events are fired on the canvas the variable "this" is going to mean the canvas!
-  // Since we still want to use this particular CanvasState in the events we have to save a reference to it.
-  // This is our reference!
-  var myState = this;
+  var state = this;
   
   //fixes a problem where double clicking causes text to get selected on the canvas
-  canvas.addEventListener('selectstart', function(e) { e.preventDefault(); return false; }, false);
-  // Up, down, and move are for dragging
-  canvas.addEventListener('mousedown', function(e) {
-    if (myState.expectResize !== -1) {
-      myState.resizeDragging = true;
+  canvas.addEventListener('selectstart', function(evt) { evt.preventDefault(); return false; }, false);
+
+  canvas.addEventListener('mousedown', function(evt) {
+    if (state.expectResize !== -1) {
+      state.resizeDragging = true;
       return;
     }
-    var mouse = myState.getMouse(e);
+    var mouse = state.getMouse(evt);
     var mx = mouse.x;
     var my = mouse.y;
-    var shapes = myState.shapes;
+    var shapes = state.shapes;
     var l = shapes.length;
     for (var i = l-1; i >= 0; i--) {
       if (shapes[i].contains(mx, my)) {
         var mySel = shapes[i];
         // Keep track of where in the object we clicked
-        // so we can move it smoothly (see mousemove)
-        myState.dragoffx = mx - mySel.x;
-        myState.dragoffy = my - mySel.y;
-        myState.dragging = true;
-        myState.selection = mySel;
-        myState.selection_index = i;
-        myState.req_redraw = true;
+        state.dragoffx = mx - mySel.x;
+        state.dragoffy = my - mySel.y;
+        state.dragging = true;
+        state.selection = mySel;
+        state.selection_index = i;
+        state.req_redraw = true;
         return;
       }
     }
-    // havent returned means we have failed to select anything.
-    // If there was an object selected, we deselect it
-    myState.deselect();
+
+    state.deselect();  // nothing selected
   }, true);
 
-  canvas.addEventListener('mousemove', function(e) {
-    if (myState.dragging){
-      var mouse = myState.getMouse(e);
-      // We don't want to drag the object by its top-left corner,
-      // we want to drag from where we clicked.
-      // Thats why we saved the offset and use it here
-      myState.selection.x = mouse.x - myState.dragoffx;
-      myState.selection.y = mouse.y - myState.dragoffy;   
-      myState.req_redraw = true; // Something's dragging so we must redraw
-    } else if (myState.resizeDragging) {
-      var mouse = myState.getMouse(e);
-      // time to resize!
-      var oldx = myState.selection.x;
-      var oldy = myState.selection.y;
+  canvas.addEventListener('mousemove', function(evt) {
+    if (state.dragging){
+      var mouse = state.getMouse(evt);
+      state.selection.x = mouse.x - state.dragoffx;
+      state.selection.y = mouse.y - state.dragoffy;
+      state.req_redraw = true;
+    } else if (state.resizeDragging) {
+      var mouse = state.getMouse(evt);
+
+      var oldx = state.selection.x;
+      var oldy = state.selection.y;
       // 0  1  2
       // 3     4
       // 5  6  7
-      switch (myState.expectResize) {
+      switch (state.expectResize) {
         case 0:
-          myState.selection.x = mouse.x;
-          myState.selection.y = mouse.y;
-          myState.selection.w += oldx - mouse.x;
-          myState.selection.h += oldy - mouse.y;
+          state.selection.x = mouse.x;
+          state.selection.y = mouse.y;
+          state.selection.w += oldx - mouse.x;
+          state.selection.h += oldy - mouse.y;
           break;
         case 1:
-          myState.selection.y = mouse.y;
-          myState.selection.h += oldy - mouse.y;
+          state.selection.y = mouse.y;
+          state.selection.h += oldy - mouse.y;
           break;
         case 2:
-          myState.selection.y = mouse.y;
-          myState.selection.w = mouse.x - oldx;
-          myState.selection.h += oldy - mouse.y;
+          state.selection.y = mouse.y;
+          state.selection.w = mouse.x - oldx;
+          state.selection.h += oldy - mouse.y;
           break;
         case 3:
-          myState.selection.x = mouse.x;
-          myState.selection.w += oldx - mouse.x;
+          state.selection.x = mouse.x;
+          state.selection.w += oldx - mouse.x;
           break;
         case 4:
-          myState.selection.w = mouse.x - oldx;
+          state.selection.w = mouse.x - oldx;
           break;
         case 5:
-          myState.selection.x = mouse.x;
-          myState.selection.w += oldx - mouse.x;
-          myState.selection.h = mouse.y - oldy;
+          state.selection.x = mouse.x;
+          state.selection.w += oldx - mouse.x;
+          state.selection.h = mouse.y - oldy;
           break;
         case 6:
-          myState.selection.h = mouse.y - oldy;
+          state.selection.h = mouse.y - oldy;
           break;
         case 7:
-          myState.selection.w = mouse.x - oldx;
-          myState.selection.h = mouse.y - oldy;
+          state.selection.w = mouse.x - oldx;
+          state.selection.h = mouse.y - oldy;
           break;
       }
-      myState.req_redraw = true;
-    } else if (myState.selection !== null) {
-      var mouse = myState.getMouse(e);
+      state.req_redraw = true;
+    } else if (state.selection !== null) {
+      var mouse = state.getMouse(evt);
       for (var i = 0; i < 8; i++) {
         // 0  1  2
         // 3     4
         // 5  6  7
-        var cur = myState.selectionHandles[i];
+        var cur = state.selectionHandles[i];
 
-        if (mouse.x >= cur.x && mouse.x <= cur.x + myState.selectionBoxSize &&
-            mouse.y >= cur.y && mouse.y <= cur.y + myState.selectionBoxSize) {
+        if (mouse.x >= cur.x && mouse.x <= cur.x + state.selectionBoxSize &&
+            mouse.y >= cur.y && mouse.y <= cur.y + state.selectionBoxSize) {
           // cursor hovering over a handle
-          myState.expectResize = i;
+          state.expectResize = i;
 
           switch (i) {
             case 0:
@@ -186,46 +171,45 @@ function CanvasState(canvas) {
         }
       }
       // not over a selection box, return to normal
-      myState.expectResize = -1;
+      state.expectResize = -1;
       this.style.cursor = 'auto';
     }
   }, true);
 
-  canvas.addEventListener('mouseup', function(e) {
-    myState.dragging = false;
-    myState.resizeDragging = false;
-    myState.expectResize = -1;
-    if (myState.selection !== null) {
-      if (myState.selection.w < 0) {
-          myState.selection.w = -myState.selection.w;
-          myState.selection.x -= myState.selection.w;
+  canvas.addEventListener('mouseup', function(evt) {
+    state.dragging = false;
+    state.resizeDragging = false;
+    state.expectResize = -1;
+    if (state.selection !== null) {
+      if (state.selection.w < 0) {
+          state.selection.w = -state.selection.w;
+          state.selection.x -= state.selection.w;
       }
-      if (myState.selection.h < 0) {
-          myState.selection.h = -myState.selection.h;
-          myState.selection.y -= myState.selection.h;
+      if (state.selection.h < 0) {
+          state.selection.h = -state.selection.h;
+          state.selection.y -= state.selection.h;
       }
     }
   }, true);
 
   // double click for making new Shapes
-  canvas.addEventListener('dblclick', function(e) {
-    var mouse = myState.getMouse(e);
+  canvas.addEventListener('dblclick', function(evt) {
+    var mouse = state.getMouse(evt);
 
     // check if we dblclick on existing shape
-    if (myState.selection && myState.selection.contains(mouse.x, mouse.y)) {
-      myState.removeShape();
+    if (state.selection && state.selection.contains(mouse.x, mouse.y)) {
+      state.removeShape();
       return;
     }
 
     // dblclick on empty space creates new shape
     this.style.cursor = 'auto';
-    myState.addShape(
-      new Shape(mouse.x - myState.next_width/2, mouse.y - myState.next_height/2,
-                myState.next_width, myState.next_height, myState.next_color)
+    state.addShape(
+      new Shape(mouse.x - state.next_width/2, mouse.y - state.next_height/2,
+                state.next_width, state.next_height, state.next_color)
       );
   }, true);
 
-  // **** Options! ****
   this.selectionColor = '#CC0000';
   this.selectionWidth = 2;  
   this.interval = 30;
@@ -233,26 +217,21 @@ function CanvasState(canvas) {
   this.selectionBoxSize = 6;
   this.z_index_font = "16px helvetica";
   this.z_index_color = "green"
-  setInterval(function() { myState.draw(); }, myState.interval);
+  setInterval(function() { state.draw(); }, state.interval);
 };
 
 
-// called manually/explicitely, so "this" has the correct reference
-// otherwise it refers to the canvas element
-// which forces us to set e.g. canvas.state = s (in main.js)
-// then use this.state.selection etc in this function
-CanvasState.prototype.hotkeys = function(event) {
-  var key = event.key;
-  var ctrl = event.ctrlKey;
+CanvasState.prototype.hotkeys = function(evt) {
+  var key = evt.key.toLowerCase();
+  var ctrl = evt.ctrlKey;
 
   if (ctrl && key == 'x') {
     if (this.selection)
       this.removeShape();
-    // console.log('cut')
-  } else if (key == 'Delete') {
+  } else if (key == 'delete') {
     if (this.selection)
       this.removeShape();
-  } else if (key == 'Escape') {
+  } else if (key == 'escape') {
     this.deselect();
   } else if (key == '-') {
     if (this.selection && this.selection_index > 0) {
@@ -308,17 +287,12 @@ CanvasState.prototype.clear = function() {
 };
 
 
-// While draw is called as often as the INTERVAL variable demands,
-// It only ever does something if the canvas gets invalidated by our code
 CanvasState.prototype.draw = function() {
-  // if our state is invalid, redraw and validate!
   if (this.req_redraw) {
     // console.log('redrawing');
     var ctx = this.ctx;
     var shapes = this.shapes;
     this.clear();
-    
-    // ** Add stuff you want drawn in the background all the time here **
     
     // draw all shapes
     var l = shapes.length;
@@ -331,7 +305,6 @@ CanvasState.prototype.draw = function() {
     }
     
     // draw selection
-    // right now this is just a stroke along the edge of the selected Shape
     if (this.selection !== null) {
       ctx.strokeStyle = this.selectionColor;
       ctx.lineWidth = this.selectionWidth;
@@ -351,18 +324,13 @@ CanvasState.prototype.draw = function() {
       }
     }
     
-    // ** Add stuff you want drawn on top all the time here **
     this.req_redraw = false;
   }
 };
 
 
 
-// Creates an object with x and y defined,
-// set to the mouse position relative to the state's canvas
-// If you wanna be super-correct this can be tricky,
-// we have to worry about padding and borders
-CanvasState.prototype.getMouse = function(e) {
+CanvasState.prototype.getMouse = function(evt) {
   var element = this.canvas, offsetX = 0, offsetY = 0, mx, my;
   
   // Compute the total offset
@@ -378,9 +346,8 @@ CanvasState.prototype.getMouse = function(e) {
   offsetX += this.stylePaddingLeft + this.styleBorderLeft + this.htmlLeft;
   offsetY += this.stylePaddingTop + this.styleBorderTop + this.htmlTop;
 
-  mx = e.pageX - offsetX;
-  my = e.pageY - offsetY;
+  mx = evt.pageX - offsetX;
+  my = evt.pageY - offsetY;
   
-  // We return a simple javascript object (a hash) with x and y defined
   return {x: mx, y: my};
 };
